@@ -94,16 +94,10 @@ func (db *MongoDB) GetAllThreads() ([]bitdata.ThreadDocument, error) {
 		}
 		threads = append(
 			threads,
-			bitdata.ThreadDocument{
-				thread["id"].(string),
-				thread["topic"],
-				thread["title"],
-				thread["createdBy"],
-				thread["createdAt"],
-			},
+			bitdata.ThreadDocumentFromBson(thread),
 		)
 	}
-
+	return threads, nil
 }
 
 // DeleteThread removes the given thread document from the database
