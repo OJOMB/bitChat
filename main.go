@@ -14,4 +14,10 @@ func main() {
 		http.NewServeMux(),
 	)
 	server.ListenAndServe()
+
+	defer func() {
+		if err = s.DB.client.Disconnect(ctx); err != nil {
+			panic(err)
+		}
+	}()
 }
