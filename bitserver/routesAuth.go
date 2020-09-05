@@ -2,82 +2,95 @@ package bitserver
 
 import (
 	"net/http"
+	"time"
+
+	"github.com/OJOMB/bitChat/bituser"
+	"github.com/OJOMB/bitChat/bitutils"
 )
 
-// GET /login
+// HandleLogin Methods: [GET], Url: /login
 // Show the login page
-func (s *BitServer) HandleLogin() HandlerFunc {
-	return func(w http.ResponseWriter, request *http.Request) {
-		t := bitUtils.parseTemplateFiles("login.layout", "public.navbar", "login")
+func (s *BitServer) HandleLogin() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		t := bitutils.ParseTemplateFiles("login.layout", "public.navbar", "login")
 		t.Execute(w, nil)
 	}
 }
 
-// GET /signup
+// HandleSignup Methods: [GET], Url: /signup
 // Show the signup page
-func (s *BitServer) HandleSignup() HandlerFunc {
+func (s *BitServer) HandleSignup() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		bitUtils.generateHTML(w, nil, "login.layout", "public.navbar", "signup")
+		bitutils.GenerateHTML(w, nil, "login.layout", "public.navbar", "signup")
 	}
 }
 
-// POST /signup
+// HandleSignupAccount Methods: [POST], Url: /signup
 // Create the user account
-func (s *BitServer) HandleSignupAccount() HandlerFunc {
-	return func(w http.ResponseWriter, request *http.Request) {
-		err := request.ParseForm()
+func (s *BitServer) HandleSignupAccount() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
 		if err != nil {
-			s.Logger.Error(err, "Cannot parse form")
+			s.logger.Error("failed to parse form with error: %s", err.Error())
 		}
-		user := data.User{
-			Name:     request.PostFormValue("name"),
-			Email:    request.PostFormValue("email"),
-			Password: request.PostFormValue("password"),
+		user := bituser.User{
+			Name:      r.PostFormValue("name"),
+			Email:     r.PostFormValue("email"),
+			Password:  r.PostFormValue("password"),
+			Bio:       r.PostFormValue("bio"),
+			CreatedAt: time.Now(),
 		}
-		if err := user.Create(); err != nil {
-			s.Logger.Error(err, "Cannot create user")
+		if err := s.Repo.CreateUser(user.ToDocument()); err != nil {
+			s.logger.Error(err, "Cannot create user")
 		}
-		http.Redirect(w, request, "/login", 302)
+		http.Redirect(w, r, "/login", 302)
 	}
 }
 
-// POST /authenticate
+// HandleAuthenticate Methods: [POST], Url: /authenticate
 // Authenticate the user given the email and password
-func (s *BitServer) HandleAuthenticate() HandlerFunc {
-	return func(w http.ResponseWriter, request *http.Request) {
-		err := request.ParseForm()
-		user, err := data.UserByEmail(request.PostFormValue("email"))
+func (s *BitServer) HandleAuthenticate() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
 		if err != nil {
-			s.Logger.Error(err, "Cannot find user")
+			s.logger.Error(err, "Failed to parse data from Login form")
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		if user.Password == data.Encrypt(request.PostFormValue("password")) {
-			session, err := user.CreateSession()
+
+		user, err := s.Repo.GetUserByEmail(r.PostFormValue("email"))
+		if err != nil {
+			s.logger.Error("Failed to retrieve user with email: %s. Encountered the following error: %s", r.PostFormValue("email"), err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+
+		if user.Password == bitutils.Encrypt(r.PostFormValue("password")) {
+			sess, err := user.CreateSession()
 			if err != nil {
-				s.Logger.Error(err, "Cannot create session")
+				s.logger.Error("Failed to create session, encounter the following error: %s", err.Error())
 			}
 			cookie := http.Cookie{
 				Name:     "_cookie",
-				Value:    session.Uuid,
+				Value:    sess.Uuid,
 				HttpOnly: true,
 			}
 			http.SetCookie(w, &cookie)
-			http.Redirect(w, request, "/", 302)
+			http.Redirect(w, r, "/", 302)
 		} else {
-			http.Redirect(w, request, "/login", 302)
+			http.Redirect(w, r, "/login", 302)
 		}
 	}
 }
 
-// GET /logout
+// HandleLogout Methods: [GET], Url: /logout
 // Logs the user out
-func (s *BitServer) HandleLogout() HandlerFunc {
-	return func(w http.ResponseWriter, request *http.Request) {
-		cookie, err := request.Cookie("_cookie")
+func (s *BitServer) HandleLogout() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("_cookie")
 		if err != http.ErrNoCookie {
 			s.Logger.Warning(err, "Failed to get cookie")
 			session := data.Session{Uuid: cookie.Value}
 			session.DeleteByUUID()
 		}
-		http.Redirect(w, request, "/", 302)
+		http.Redirect(w, r, "/", 302)
 	}
 }

@@ -4,9 +4,9 @@ import (
 	"net/http"
 )
 
-// GET /err?msg=
+// HandleErr Methods: [GET], Url: /err?msg=
 // shows the error message page
-func (s *BitServer) HandleErr() HandlerFunc {
+func (s *BitServer) HandleErr() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		vals := request.URL.Query()
 		_, err := session(writer, request)
@@ -18,9 +18,9 @@ func (s *BitServer) HandleErr() HandlerFunc {
 	}
 }
 
-// GET
+// HandleIndex Methods: [GET], Url: /
 // responds with home page
-func (s *BitServer) HandleIndex() HandlerFunc {
+func (s *BitServer) HandleIndex() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		threads, err := data.Threads()
 		if err != nil {
@@ -36,8 +36,8 @@ func (s *BitServer) HandleIndex() HandlerFunc {
 	}
 }
 
-// GET
-// static file server from /public
+// HandleStatic Methods: [GET], Url: /public
+// static file server
 func (s *BitServer) HandleStatic() http.Handler {
 	return http.StripPrefix(
 		"/static/",

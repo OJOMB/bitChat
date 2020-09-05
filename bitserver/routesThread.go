@@ -5,9 +5,9 @@ import (
 	"net/http"
 )
 
-// GET /threads/new
+// HandleNewThread  Methods: [GET], Url: /threads/new
 // Show the new thread form page
-func (s *BitServer) HandleNewThread() HandlerFunc {
+func (s *BitServer) HandleNewThread() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_, err := session(w, r)
 		if err != nil {
@@ -18,9 +18,9 @@ func (s *BitServer) HandleNewThread() HandlerFunc {
 	}
 }
 
-// POST /signup
+// HandleCreateThread Methods:[POST], Url: /signup
 // Create the user account
-func (s *BitServer) HandleCreateThread() HandlerFunc {
+func (s *BitServer) HandleCreateThread() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sess, err := session(w, r)
 		if err != nil {
@@ -43,9 +43,9 @@ func (s *BitServer) HandleCreateThread() HandlerFunc {
 	}
 }
 
-// GET /thread/read
+// HandleReadThread Methods: [GET], Url:/thread/read
 // Show the details of the thread, including the posts and the form to write a post
-func (s *BitServer) HandleReadThread() HandlerFunc {
+func (s *BitServer) HandleReadThread() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vals := r.URL.Query()
 		uuid := vals.Get("id")
@@ -63,7 +63,7 @@ func (s *BitServer) HandleReadThread() HandlerFunc {
 	}
 }
 
-// POST /thread/post
+// HandlePostThread Methods: [POST], Url:/thread/post
 // Create the post
 func (s *BitServer) HandlePostThread() {
 	return func(w http.ResponseWriter, r *http.Request) {

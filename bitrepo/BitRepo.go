@@ -21,4 +21,5 @@ type BitRepo interface {
 	UpdateUser(user *bitdata.UserDocument) error
 	DeleteUser(userID string) error
 	GetUser(userID string) (*bitdata.UserDocument, error)
+	GetUserByEmail(email string) (*bitdata.UserDocument, error)
 }
